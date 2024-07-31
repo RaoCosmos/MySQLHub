@@ -1,27 +1,29 @@
--- Report Queries for answering Atliq Hardwares Sales Data
+-- Queries to answer business problems for a hypothetical FMCG company - Atliq --
+-- Assuming the role of a supply chain analyst to dig deep into their data and provide some reports and useful insights --
 
-/*REPORT 1 LIST OF MARKETS WHERE ATLIQ EXLUSIVE OPERATES IN THE APAC REGION */
+/*Report 1 
+LIST OF MARKETS WHERE ATLIQ EXLUSIVELY OPERATES IN THE APAC REGION */
 SELECT  
-		concat(region,' ', 'Asia-Pacific') Region, 
-		customer Customer, 
-		UPPER(market) Current_Operating_Markets
-FROM dim_customer 
+	concat(region,' ', 'Asia-Pacific') Region, customer Customer, UPPER(market) Current_Operating_Markets
+FROM 
+	dim_customer 
 WHERE region = 'APAC' AND customer = 'Atliq Exclusive'
 ORDER BY 2 ASC; 
 
-/*REPORT 2 PERCENTAGE OF UNIQUE PRODUCT INCREASE IN 2021 COMPARED TO 2020 */
-use gdb023;
 
+/*REPORT 2 
+PERCENTAGE OF UNIQUE PRODUCT INCREASE IN 2021 COMPARED TO 2020 */
+use gdb023;
 -- A. PERCENTAGE OF UNIQUE PRODUCT INCREASE 
 WITH UNQ_2020 AS
-(SELECT COUNT(distinct PRODUCT_CODE) Unique_Products_2020 , FISCAL_YEAR FROM FACT_SALES_MONTHLY GROUP BY 2 HAVING FISCAL_YEAR =2020),
-     UNQ_2021 AS
+(SELECT 
+	COUNT(distinct PRODUCT_CODE) Unique_Products_2020 , FISCAL_YEAR FROM FACT_SALES_MONTHLY GROUP BY 2 HAVING FISCAL_YEAR =2020),
+        UNQ_2021 AS
 (SELECT COUNT(distinct PRODUCT_CODE) Unique_Products_2021 , FISCAL_YEAR FROM FACT_SALES_MONTHLY GROUP BY 2 HAVING FISCAL_YEAR =2021)
-SELECT UNQ_2020.FISCAL_YEAR Fiscal_Year, 
-       UNIQUE_PRODUCTS_2020 Unique_Prods_2020, 
-       UNQ_2021.FISCAL_YEAR Fiscal_Year, 
+
+SELECT UNQ_2020.FISCAL_YEAR Fiscal_Year, UNIQUE_PRODUCTS_2020 Unique_Prods_2020, UNQ_2021.FISCAL_YEAR Fiscal_Year, 
        UNIQUE_PRODUCTS_2021 Unique_Prods_2021, 
-	   concat(round((((UNQ_2021.UNIQUE_PRODUCTS_2021 - UNQ_2020.UNIQUE_PRODUCTS_2020 ) / UNQ_2020.UNIQUE_PRODUCTS_2020) * 100), 2), '', '%') Percentage_Chng
+	concat(round((((UNQ_2021.UNIQUE_PRODUCTS_2021 - UNQ_2020.UNIQUE_PRODUCTS_2020 ) / UNQ_2020.UNIQUE_PRODUCTS_2020) * 100), 2), '', '%') Percentage_Chng
 FROM UNQ_2020 CROSS JOIN UNQ_2021;
 
 /* B. UNIQUE PRODUCT SOLD QUANTITY % INCREASE */
@@ -37,35 +39,32 @@ T2 AS
 	group by s.product_code, s.fiscal_year having s.fiscal_year = 2021   )
 
 SELECT 
-	coalesce (T1.product_code,'DidNotExist') 2020_Unique_Products , 
-	T1.product Product, 
-    sum1 sold_qty_in_2020, 
-	T2.product_code 2021_Unique_Products, 
-	T2.product Product, 
-    sum2 sold_qty_in_2021, 
-    concat( coalesce(round((((sum2-sum1)/sum2)*100),1),0) , '%') Percentage_change 
-FROM T1 RIGHT JOIN T2 ON T1.product_code=T2.product_code 
+	coalesce (T1.product_code,'DidNotExist') 2020_Unique_Products , T1.product Product, sum1 sold_qty_in_2020, 
+	T2.product_code 2021_Unique_Products, T2.product Product, sum2 sold_qty_in_2021, 
+        concat( coalesce(round((((sum2-sum1)/sum2)*100),1),0) , '%') Percentage_change 
+FROM T1 
+	RIGHT JOIN T2 ON T1.product_code=T2.product_code 
 ORDER BY 7 DESC;
 
-/*REPORT 3 PROVIDE SEGMENT WISE UNIQUE PRODUCT OFFERING */ 
+/*REPORT 3 
+PROVIDE SEGMENT WISE UNIQUE PRODUCT OFFERING */ 
 
 SELECT  
-UPPER(segment) Segment , 
-CONCAT(COUNT(DISTINCT product_code), ' ' , 'Unique Products') Products 
-FROM dim_product GROUP BY segment ORDER BY 2 ASC;
+UPPER(segment) Segment , CONCAT(COUNT(DISTINCT product_code), ' ' , 'Unique Products') Products 
+FROM dim_product 
+GROUP BY segment ORDER BY 2 ASC;
 
-/* REPORT 4 WHICH SEGMENT HAD THE MOST INCREASE IN UNIQUE PRODUCT OFFERING IN 2021 COMPARED TO 2020? */
+/* REPORT 4 
+WHICH SEGMENT HAD THE MOST INCREASE IN UNIQUE PRODUCT OFFERING IN 2021 COMPARED TO 2020? */
  
 WITH PRODUCTS_2020 AS
 (select 
-p.segment Segment, 
-count(distinct s.product_code) product_count_2020, s.fiscal_year from fact_sales_monthly s join dim_product p on 
-s.product_code=p.product_code group by 1,3 having s.fiscal_year=2020 order by 2 desc ),
+p.segment Segment, count(distinct s.product_code) product_count_2020, s.fiscal_year from fact_sales_monthly s 
+join dim_product p on s.product_code=p.product_code group by 1,3 having s.fiscal_year=2020 order by 2 desc ),
 
 PRODUCTS_2021 AS 
 (select 
-p.segment Segment, 
-count(distinct s.product_code) Product_count_2021, s.fiscal_year from fact_sales_monthly s join dim_product p on 
+p.segment Segment, count(distinct s.product_code) Product_count_2021, s.fiscal_year from fact_sales_monthly s join dim_product p on 
 s.product_code=p.product_code group by 1,3 having s.fiscal_year=2021 order by 2 desc )
 
 SELECT  PRODUCTS_2020.SEGMENT Segment, 
@@ -75,7 +74,8 @@ SELECT  PRODUCTS_2020.SEGMENT Segment,
 FROM PRODUCTS_2020 JOIN PRODUCTS_2021 
 ON PRODUCTS_2020.SEGMENT = PRODUCTS_2021.SEGMENT ORDER BY Product_Increase DESC;
 
-/* REPORT 5 PRODUCT WITH HIGHEST AND LOWEST MANUFACTURING COSTS */
+/* REPORT 5 
+PRODUCT WITH HIGHEST AND LOWEST MANUFACTURING COSTS */
 select m.product_code, 
 	   p.product,
        m.manufacturing_cost
@@ -88,7 +88,8 @@ select m.product_code,
 from dim_product p join fact_manufacturing_cost m on m.product_code=p.product_code where manufacturing_cost=
 (select min(manufacturing_cost) from fact_manufacturing_cost);
 
-/* REPORT 6 TOP 5 CUSTOMERS WITH HIGHEST AVERAGE DISCOUNTS FOR 2021 IN THE INDIAN MARKET */
+/* REPORT 6 
+TOP 5 CUSTOMERS WITH HIGHEST AVERAGE DISCOUNTS FOR 2021 IN THE INDIAN MARKET */
  SELECT 
 	D.FISCAL_YEAR Fiscal_Year, 
 	D.CUSTOMER_CODE Cust_Code, 
@@ -100,12 +101,11 @@ from dim_product p join fact_manufacturing_cost m on m.product_code=p.product_co
  HAVING FISCAL_YEAR =2021 AND C.MARKET = 'India' ORDER BY 5 DESC limit 5 ;
  
  
-/* REPORT 7 MONTHLY GROSS SALES AMOUNT FOR ATLIQ EXCLUSIVE */
+/* REPORT 7 
+MONTHLY GROSS SALES AMOUNT FOR ATLIQ EXCLUSIVE */
 
  SELECT  
- c.customer Customer,
- month(s.date) Month,
- year(s.date) Year,
+ c.customer Customer, month(s.date) Month, year(s.date) Year,
  -- s.fiscal_year,
  SUM((s.sold_quantity*g.gross_price)) Gross_Sales_Amount
  from fact_sales_monthly s
@@ -114,7 +114,8 @@ from dim_product p join fact_manufacturing_cost m on m.product_code=p.product_co
  group by 1,2,3 having c.customer = 'Atliq Exclusive'
  order by 3 asc ;
  
- /* REPORT 8 WHICH QUARTER OF 2020 GOT THE MAXIMUM TOTAL SOLD QUANTITIES?*/
+ /* REPORT 8 
+WHICH QUARTER OF 2020 GOT THE MAXIMUM TOTAL SOLD QUANTITIES?*/
 WITH CTE1 AS 
 (SELECT 
 	s.fiscal_year, 
@@ -171,7 +172,8 @@ CGS.GROSS_SALES Gross_Sales,
 CONCAT(round(((CGS.gross_sales/TGS.total_gross_sales)*100),2),' ', '%')  Percentage
 from CGS join TGS on CGS.fiscal_year=TGS.fiscal_year;
 
-/* REPORT 10  TOP 3 PRODUCTS IN EACH DIVISION WITH HIGH TOTAL SOLD QUANTITY FOR 2021? */
+/* REPORT 10  
+TOP 3 PRODUCTS IN EACH DIVISION WITH HIGH TOTAL SOLD QUANTITY FOR 2021? */
 with sales as 
 ( select division, 
 	     m.product_code, 
@@ -188,15 +190,11 @@ RANKS as
 from sales s )
 
 select 
-	division, 
-	s.product_code, 
-    product, 
-    s.total_sold_quantity, 
-    rank_order 
+	division, s.product_code, product, s.total_sold_quantity, rank_order 
 from
-sales s inner join ranks as r 
-on r.product_code=s.product_code 
+sales s 
+	inner join ranks as r on r.product_code=s.product_code 
 where rank_order between 1 and 3;
 
-
+--------- END ----------
 
