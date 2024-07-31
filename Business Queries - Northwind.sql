@@ -1,169 +1,7 @@
 -- NorthWind Database Tables
 /*TABLES AND DATA */
-create table categories 
-( categoryid int, categoryname char(20), description text ); 
 
-create table customers 
-( customerid char(20), companyname text, contactname text,
-contacttitle text, address text, city char(20),
-region char(20), postalcode varchar(50), country varchar(50),
-phone varchar(50), fax varchar(50) );
-
-create table employees 
-( employeeid int, lastname text, firstname text, title text,
-titleofcourtesy text, birthdate date, hiredate date,
-address text, city text, region text, postalcode text,
-country text, homephone text, extension int, notes text,
-reports_to int );
-
-create table employeeterritories
-( employeeid int, territoryid int );
-
-create table order_details
-( orderid int, productid int, unitprice real, quantity int, discount real);
-
-create table orders 
-( orderid int, customerid text, employeeid int, orderdate date,
-requireddate date, shippeddate date, shipvia int, freight real,
-shipname text, shipaddress text, shipcity text,
-shipregion text, shippostalcode text, shipcountry text );
-
-create table products 
-( productid int, productname text, supplierid int, categoryid int,
-quantityperunit text, unitprice real,
-unitsinstock real, unitsonorder real, reorderlevel real, discontinued int );
-
-create table region
-( regionid int, regiondescription text );
-
-create table shippers
-( shipperid int, companyname text, phone text );
-
-create table suppliers
-( supplierid int, companyname text, contactname text,
-contacttitle text,address text,city text, region text,
-postalcode text, country text, phone text, fax text,
-homepage text);
-
-create table territories
-( territoryid int,territorydescription text, regionid int);
-
-create table usstates
-( stateid int, statename text, stateabbr text, stateregion text);
-
-------------------/* BUSINESS QUESTIONS */----------------------
-
--- Categories
-select 
-c.categoryid,
-c.categoryname,
-count(p.productid)
-from products p
-join categories c 
-on c.categoryid=p.categoryid
-group by 1, 2
-order by 3 desc;
-
--- total customers per country
-select * from customers;
-select c.country,
-c.city,
-count(distinct c.customerid)
-from customers c 
-group by 1,2 
-order by 3 desc;
-
--- Products that need reordering
-select * from products;
-select productid, productname,
-unitsinstock,
-reorderlevel
-from products
-where 
-unitsinstock < reorderlevel
-order by 1;
-
--- customer by region
-select
-coalesce(c.region,'NA'),
-c.customerid,
-initcap(c.companyname)
-from customers c 
-order by 1 asc;
-
--- High freight charges problem
-select 
-o.shipcountry,
-ceil(avg(o.freight)) avg_freight
-from orders o 
-group by 1
-order by 2 desc
-limit 3;
-
--- High Freight charge problem in the year 2015
-select 
-o.shipcountry,
-o.orderdate,
-ceil(avg(o.freight)) avg_freight
-from orders o 
-group by 1,2
-having o.orderdate >= '1997-01-01'
-order by 2 desc
-limit 3;
-
--- High Freight charge problems last year
--- LAST 12 MONTHS DATA- USE INTERVAL FUNCTION
--- FIRST FIND THE LATEST ORDERDATE (USE MAX)
--- USE INTERVAL WHICH WILL TAKE BACK THE DATE 12 MONTHS BEHIND
--- THEN SELECT ORDERDATE THAT IS > THAN THAT INTERVAL DATE 
-select 
-o.shipcountry,
-o.orderdate,
-ceil(avg(o.freight)) avg_freight
-from orders o 
-group by 1,2
-having o.orderdate > (select max(orderdate)
-from orders) - interval '12 months' 
-order by 3 desc
-limit 3;
-
-select max(orderdate) - interval '12 months'
-from orders;
-
--- customers with no orders
--- using subquery single columns multiple row sq
--- customers with no orders for empid 4
-select c.customerid from customers c 
-where c.customerid  not in 
-(select o.customerid from orders o where 
-o.employeeid=4);
-
--- using correlated sub query 
-select c.customerid
-from customers c 
-where c.customerid not in
-( select o.customerid from orders o
-  where o.customerid=c.customerid and 
-  o.employeeid=4	
-);
-
--- customers who have ordered something 
--- using right join
-select 
-distinct o.customerid
-from customers c 
-right join orders o 
-on c.customerid=o.customerid;
-
--- correlated subquery 
-select c.customerid
-from customers c
-where
-exists (select o.customerid from orders o
-where o.customerid=c.customerid);
-
-
-/* ADVANCED BUSINESS QUESTIONS */
+/* Advanced Business Problems*/
 
 -- customers with high orders in 2016
 WITH total_sum as 
@@ -443,10 +281,169 @@ where cte1.next_orderdate- cte1.initial_orderdate::date
 
 
 
+/* table data */
+
+create table categories 
+( categoryid int, categoryname char(20), description text ); 
+
+create table customers 
+( customerid char(20), companyname text, contactname text,
+contacttitle text, address text, city char(20),
+region char(20), postalcode varchar(50), country varchar(50),
+phone varchar(50), fax varchar(50) );
+
+create table employees 
+( employeeid int, lastname text, firstname text, title text,
+titleofcourtesy text, birthdate date, hiredate date,
+address text, city text, region text, postalcode text,
+country text, homephone text, extension int, notes text,
+reports_to int );
+
+create table employeeterritories
+( employeeid int, territoryid int );
+
+create table order_details
+( orderid int, productid int, unitprice real, quantity int, discount real);
+
+create table orders 
+( orderid int, customerid text, employeeid int, orderdate date,
+requireddate date, shippeddate date, shipvia int, freight real,
+shipname text, shipaddress text, shipcity text,
+shipregion text, shippostalcode text, shipcountry text );
+
+create table products 
+( productid int, productname text, supplierid int, categoryid int,
+quantityperunit text, unitprice real,
+unitsinstock real, unitsonorder real, reorderlevel real, discontinued int );
+
+create table region
+( regionid int, regiondescription text );
+
+create table shippers
+( shipperid int, companyname text, phone text );
+
+create table suppliers
+( supplierid int, companyname text, contactname text,
+contacttitle text,address text,city text, region text,
+postalcode text, country text, phone text, fax text,
+homepage text);
+
+create table territories
+( territoryid int,territorydescription text, regionid int);
+
+create table usstates
+( stateid int, statename text, stateabbr text, stateregion text);
+
+------------------/* BUSINESS QUESTIONS */----------------------
+
+-- Categories
+select 
+c.categoryid,
+c.categoryname,
+count(p.productid)
+from products p
+join categories c 
+on c.categoryid=p.categoryid
+group by 1, 2
+order by 3 desc;
+
+-- total customers per country
+select * from customers;
+select c.country,
+c.city,
+count(distinct c.customerid)
+from customers c 
+group by 1,2 
+order by 3 desc;
+
+-- Products that need reordering
+select * from products;
+select productid, productname,
+unitsinstock,
+reorderlevel
+from products
+where 
+unitsinstock < reorderlevel
+order by 1;
+
+-- customer by region
+select
+coalesce(c.region,'NA'),
+c.customerid,
+initcap(c.companyname)
+from customers c 
+order by 1 asc;
+
+-- High freight charges problem
+select 
+o.shipcountry,
+ceil(avg(o.freight)) avg_freight
+from orders o 
+group by 1
+order by 2 desc
+limit 3;
+
+-- High Freight charge problem in the year 2015
+select 
+o.shipcountry,
+o.orderdate,
+ceil(avg(o.freight)) avg_freight
+from orders o 
+group by 1,2
+having o.orderdate >= '1997-01-01'
+order by 2 desc
+limit 3;
+
+-- High Freight charge problems last year
+-- LAST 12 MONTHS DATA- USE INTERVAL FUNCTION
+-- FIRST FIND THE LATEST ORDERDATE (USE MAX)
+-- USE INTERVAL WHICH WILL TAKE BACK THE DATE 12 MONTHS BEHIND
+-- THEN SELECT ORDERDATE THAT IS > THAN THAT INTERVAL DATE 
+select 
+o.shipcountry,
+o.orderdate,
+ceil(avg(o.freight)) avg_freight
+from orders o 
+group by 1,2
+having o.orderdate > (select max(orderdate)
+from orders) - interval '12 months' 
+order by 3 desc
+limit 3;
+
+select max(orderdate) - interval '12 months'
+from orders;
+
+-- customers with no orders
+-- using subquery single columns multiple row sq
+-- customers with no orders for empid 4
+select c.customerid from customers c 
+where c.customerid  not in 
+(select o.customerid from orders o where 
+o.employeeid=4);
+
+-- using correlated sub query 
+select c.customerid
+from customers c 
+where c.customerid not in
+( select o.customerid from orders o
+  where o.customerid=c.customerid and 
+  o.employeeid=4	
+);
+
+-- customers who have ordered something 
+-- using right join
+select 
+distinct o.customerid
+from customers c 
+right join orders o 
+on c.customerid=o.customerid;
+
+-- correlated subquery 
+select c.customerid
+from customers c
+where
+exists (select o.customerid from orders o
+where o.customerid=c.customerid);
 
 
-
-
-
-
-
+--- end ----
