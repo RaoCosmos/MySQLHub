@@ -1,126 +1,15 @@
-/* F1 EXPLORATORY DATA ANALYSIS */
+/* Formula1 {Elite Single-seater Motorsport) Exploratory Data Analysis - 2023/2022 season data */
+/* Part A - Fernando Alonso career analysis, Part B - Driver profile analysis, Part C - Constructor profile analysis, Part D - General Analysis */
 
-/* Driver Analysis */
--- Driver wins
-SELECT R.DRIVERID, D.FORENAME, d.surname, D.NATIONALITY,
-COUNT(POSITION) AS WINS
-FROM RESULTS R JOIN DRIVERS D ON 
-D.DRIVERID=R.DRIVERID
-WHERE POSITION = 1 GROUP BY 1,2,3,4ORDER BY 5 DESC;
-
--- Nationality Wins
-WITH WINS AS 
-(
-SELECT R.DRIVERID, D.FORENAME, D.NATIONALITY,
-COUNT(POSITION) AS WINS
-FROM RESULTS R JOIN DRIVERS D ON 
-D.DRIVERID=R.DRIVERID
-WHERE POSITION = 1 GROUP BY 1,2,3 ORDER BY 4 DESC )
-SELECT WINS.NATIONALITY, SUM(WINS.WINS) WINS 
-FROM WINS GROUP BY 1 ORDER BY 2 DESC;
-
--- Most pole positions
-SELECT R.DRIVERID, D.FORENAME, D.NATIONALITY,
-COUNT(R.GRID) POLES FROM RESULTS R 
-JOIN DRIVERS D ON 
-D.DRIVERID=R.DRIVERID
-WHERE GRID = 1 GROUP BY 1,2,3 ORDER BY 4 DESC ;
- 
--- Nationality with most poles
-WITH WINS AS 
-(
-SELECT R.DRIVERID, D.FORENAME, D.NATIONALITY,
-COUNT(GRID) AS WINS
-FROM RESULTS R JOIN DRIVERS D ON 
-D.DRIVERID=R.DRIVERID
-WHERE GRID = 1 GROUP BY 1,2,3 ORDER BY 4 DESC )
-SELECT WINS.NATIONALITY, SUM(WINS.WINS) WINS 
-FROM WINS GROUP BY 1 ORDER BY 2 DESC;
-
--- Driver career points
-SELECT R.DRIVERID, D.FORENAME, D.NATIONALITY,
-SUM(R.POINTS) POLES FROM RESULTS R 
-JOIN DRIVERS D ON 
-D.DRIVERID=R.DRIVERID
-GROUP BY 1,2,3 ORDER BY 4 DESC ;
-
-
-/* CONSTRUCTOR ANALYSIS */
-
--- Constructor with most wins
-SELECT CS.CONSTRUCTORID, C.NAME, COUNT(CS.POSITION) FROM
-CONSTRUCTOR_STANDINGS CS JOIN CONSTRUCTORS C
-ON C.CONSTRUCTORID=CS.CONSTRUCTORID WHERE CS.POSITION = 1
-GROUP BY 1,2 ORDER BY 3 DESC;
-
--- Constructor with most points
-SELECT CS.CONSTRUCTORID, C.NAME, SUM(CS.POINTS) FROM
-CONSTRUCTOR_STANDINGS CS JOIN CONSTRUCTORS C
-ON C.CONSTRUCTORID=CS.CONSTRUCTORID 
--- WHERE CS.POSITION = 1
-GROUP BY 1,2 ORDER BY 3 DESC;
-
-/* General Analysis */ 
-
--- how points were awarded for 1st place over the years 
-select 
-a.year as Year, 
-max(b.points) as PointsForWin
-from results b 
-left join races a on a.raceId = b.raceId
-where Year not in ('2014')
-group by Year
-order by Year;
-
--- number of races on the calendar over the years 
-select year, count(round) from races 
-group by year order by 1 asc ;
-
-
-/* Pitstop analysis */
-
-select r.name, round((avg(p.milliseconds)/1000),2)
-from pitstops p join races r on
-p.raceid=r.raceid 
-group by 1 order by 2 desc  ;
-
--- are f1 cars going slow or fast these days?
--- hybrid era 2014 to 2021
-
-select 
-c.circuitname,
-rc.year,
-avg(fastestlapspeed) fastest
-from results r join races rc on 
-rc.raceid=r.raceid join circuits c on
-c.circuitid=rc.circuitid
-group by 1,2 order by 2 desc;
-
--- avg speed over the years in the hybrid era 
-select 
-rc.year,
-avg(fastestlapspeed) fastest
-from results r join races rc on 
-rc.raceid=r.raceid group by 1 order by 2 desc;
-
-
-
--- lap time per year
-select r.year, 
-avg(l.laptime)
-from laptimes l join races r on l.raceid=r.raceid
-group by 1 order by 1 desc;
-
-/* GOAT FERNANDO ALONSO F1 CAREER analysis */
+/*Part A*/
+/* GOAT - FERNANDO ALONSO F1 CAREER analysis */
 
 create or replace view alonso_career as
 (
-select * ,
-lag(points) over(order by season asc) points_from_previous_season,
-rank() over(order by points desc) ranking,
-sum(points) over() total_points_scored
+
+	select * , lag(points) over(order by season asc) points_from_previous_season, rank() over(order by points desc) ranking, sum(points) over() total_points_scored
 from
-	(select 
+( select 
 	-- ra.raceid, 
 	re.driverid,
 	d.forename first_name,
@@ -139,12 +28,9 @@ from
 
 union
 
-select * ,
-lag(points) over(order by season asc) points_from_previous_season,
-rank() over(order by points desc) rnk,
-sum(points) over() total_points_scored
+select * , lag(points) over(order by season asc) points_from_previous_season, rank() over(order by points desc) rnk, sum(points) over() total_points_scored
 from
-	(select 
+( select 
 	-- ra.raceid, 
 	re.driverid,
 	d.forename first_name,
@@ -166,13 +52,9 @@ order by 2,7) ;
 select * from alonso_career;
 select * from drivers;
 
-
 create or replace view FA_14 
 as 
-(select * ,
-lag(points) over(order by season asc) points_from_previous_season,
-rank() over(order by points desc) rnk,
-round(cume_dist() over(order by points)::numeric*100,2) cumt_dist,
+(select * , lag(points) over(order by season asc) points_from_previous_season, rank() over(order by points desc) rnk, round(cume_dist() over(order by points)::numeric*100,2) cumt_dist,
 sum(points) over() total_points_scored
 from
 	(select 
@@ -190,15 +72,6 @@ from
 	group by 1,2,3,4,5,6,7 order by 2,4 asc) X );
 
 select * from fa_14;
--- Rules for create or replace view 
-  -- cannot make alias view columns 
-  -- cannot change column name
-  -- cannot add new column before last
-  -- cannot change datatype of the column
--- edit a view -- by using the create or replace
--- drop a view
--- alter a view -- to change the structure of the view 
--- update a view 
 
 alter view fa_14 rename column driver_code to code;
 alter view fa_14 rename column points to season_points;
@@ -212,7 +85,6 @@ join races ra on re.raceid=ra.raceid
 where driverid = 4;
 
 -- fastest laps
--- multiple column multiple row sub-query
 -- fernando alonsos fastest laps so far at 25- actual 23
 with fastest as 
 ( 
@@ -282,6 +154,136 @@ join races ra on
 ra.raceid=driver_standings.raceid
 where driverid=4
 order by 1 asc;
+
+
+/* Part B - Driver Analysis */
+
+-- Driver wins
+Select R.DRIVERID, D.FORENAME, d.surname, D.NATIONALITY, COUNT(POSITION) AS WINS
+From
+	RESULTS R 
+Join 
+	DRIVERS D ON D.DRIVERID=R.DRIVERID
+Where 
+	POSITION = 1 
+
+GROUP BY 1,2,3,4 ORDER BY 5 DESC;
+
+-- Nationality Wins
+WITH WINS AS 
+(
+	SELECT R.DRIVERID, D.FORENAME, D.NATIONALITY, COUNT(POSITION) AS WINS
+	FROM 
+		RESULTS R 
+	JOIN 
+		DRIVERS D ON D.DRIVERID=R.DRIVERID
+	WHERE 
+		POSITION = 1 
+	GROUP BY 1,2,3 
+	ORDER BY 4 DESC 
+)
+SELECT WINS.NATIONALITY, SUM(WINS.WINS) WINS 
+FROM 
+	WINS 
+GROUP BY 1 
+ORDER BY 2 DESC;
+
+-- Most pole positions
+SELECT R.DRIVERID, D.FORENAME, D.NATIONALITY, COUNT(R.GRID) POLES 
+FROM 
+	RESULTS R JOIN DRIVERS D ON D.DRIVERID=R.DRIVERID
+WHERE GRID = 1 
+	GROUP BY 1,2,3 
+	ORDER BY 4 DESC ;
+ 
+-- Nationality with most poles
+WITH WINS AS 
+(
+SELECT R.DRIVERID, D.FORENAME, D.NATIONALITY, COUNT(GRID) AS WINS
+FROM 
+	RESULTS R 
+JOIN DRIVERS D 
+ON D.DRIVERID=R.DRIVERID
+WHERE GRID = 1 
+	GROUP BY 1,2,3 
+	ORDER BY 4 DESC )
+SELECT WINS.NATIONALITY, SUM(WINS.WINS) WINS 
+FROM 
+	WINS 
+GROUP BY 1 ORDER BY 2 DESC;
+
+-- Driver career points
+SELECT R.DRIVERID, D.FORENAME, D.NATIONALITY,
+SUM(R.POINTS) POLES FROM RESULTS R 
+JOIN DRIVERS D ON 
+D.DRIVERID=R.DRIVERID
+GROUP BY 1,2,3 ORDER BY 4 DESC ;
+
+
+/* Part C - Constructor Analysis */
+
+-- Constructor with most wins
+SELECT CS.CONSTRUCTORID, C.NAME, COUNT(CS.POSITION) FROM
+CONSTRUCTOR_STANDINGS CS JOIN CONSTRUCTORS C
+ON C.CONSTRUCTORID=CS.CONSTRUCTORID WHERE CS.POSITION = 1
+GROUP BY 1,2 ORDER BY 3 DESC;
+
+-- Constructor with most points
+SELECT CS.CONSTRUCTORID, C.NAME, SUM(CS.POINTS) FROM
+CONSTRUCTOR_STANDINGS CS JOIN CONSTRUCTORS C
+ON C.CONSTRUCTORID=CS.CONSTRUCTORID 
+-- WHERE CS.POSITION = 1
+GROUP BY 1,2 ORDER BY 3 DESC;
+
+/* Part D - General Analysis */ 
+
+-- how points were awarded for 1st place over the years 
+select 
+a.year as Year, 
+max(b.points) as PointsForWin
+from results b 
+left join races a on a.raceId = b.raceId
+where Year not in ('2014')
+group by Year
+order by Year;
+
+-- number of races on the calendar over the years 
+select year, count(round) from races 
+group by year order by 1 asc ;
+
+
+/* Pitstop analysis */
+
+select r.name, round((avg(p.milliseconds)/1000),2)
+from pitstops p join races r on
+p.raceid=r.raceid 
+group by 1 order by 2 desc  ;
+
+-- are f1 cars going slow or fast these days?
+-- hybrid era 2014 to 2021
+
+select 
+c.circuitname,
+rc.year,
+avg(fastestlapspeed) fastest
+from results r join races rc on 
+rc.raceid=r.raceid join circuits c on
+c.circuitid=rc.circuitid
+group by 1,2 order by 2 desc;
+
+-- avg speed over the years in the hybrid era 
+select 
+rc.year,
+avg(fastestlapspeed) fastest
+from results r join races rc on 
+rc.raceid=r.raceid group by 1 order by 2 desc;
+
+-- lap time per year
+select r.year, 
+avg(l.laptime)
+from laptimes l join races r on l.raceid=r.raceid
+group by 1 order by 1 desc;
+
 
  
 
