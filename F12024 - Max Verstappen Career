@@ -1,0 +1,92 @@
+--- FORMULA 1 2024 SEASON ----
+------------------------------
+
+---- 2024 RACE RESULTS ---
+--------------------------
+SELECT RA.NAME GRANDPRIX, 
+		RA.DATE DATE, 
+		CONCAT(D.FORENAME,' ', D.SURNAME) AS WINNER, 
+		C.NAME TEAM, 
+		RE.LAPS, 
+		RE.FASTESTLAPTIME TIME
+FROM RESULTS RE 
+JOIN RACES RA ON RE.RACEID=RA.RACEID
+JOIN DRIVERS D ON D.DRIVERID=RE.DRIVERID
+JOIN CONSTRUCTORS C ON C.CONSTRUCTORID=RE.CONSTRUCTORID
+WHERE RE.POSITION = 1 AND RA.YEAR=2024
+GROUP BY 1,2,3,4,5,6
+ORDER BY 2 ASC;
+
+---- 2024 FASTEST LAP RESULTS ----
+----------------------------------
+SELECT  GP.GRANDPRIX, 
+		GP. DATE,
+		GP.DRIVER,
+		GP.TEAM,
+		GP.TIME
+		FROM
+(SELECT RA.NAME GRANDPRIX, 
+	   RA.DATE DATE, 
+	   CONCAT(D.FORENAME,' ', D.SURNAME) driver, 
+	   C.NAME TEAM, 
+	   RE.FASTESTLAPTIME TIME,
+	   RANK() OVER (PARTITION BY RA.RACEID ORDER BY RE.FASTESTLAPTIME ASC) AS LAP_TIME
+FROM RESULTS RE 
+JOIN RACES RA ON RE.RACEID=RA.RACEID
+JOIN DRIVERS D ON D.DRIVERID=RE.DRIVERID
+JOIN CONSTRUCTORS C ON C.CONSTRUCTORID=RE.CONSTRUCTORID
+WHERE RA.YEAR=2024 AND RE.FASTESTLAPTIME <> '00:00:00'
+ORDER BY 2,5 ASC) GP
+WHERE LAP_TIME =1
+ORDER BY 2, 3 ASC;
+
+
+---- MAX VERSTAPPEN CAREER SUMMARY ----
+---------------------------------------
+with season_points as (
+    select 
+        re.driverid,
+        ra.year as season,
+        sum(re.points) as points
+    from results re
+    join races ra on re.raceid = ra.raceid
+    group by re.driverid, ra.year
+),
+season_ranks as 
+(
+    select 
+        driverid,
+        season,
+        points,
+        rank() over (partition by season order by points desc) as championship_position
+    from season_points
+)
+select 
+    X.*,
+    lag(X.points) over (partition by X.driverid order by X.season asc) as previous_season_points,
+    rank() over (order by X.points desc) as ranking,
+    sum(X.points) over () as total_career_points,
+    case when sr.championship_position = 1 then 'World Champion' end as championship_status,
+    sr.championship_position
+from (
+    select 
+        re.driverid,
+        CONCAT(d.forename, d.surname) as driver_name, 
+        d.number,
+	    d.nationality,
+        to_char(d.dob,'DD-MonthYYYY') as birthday,
+        ra.year as season,
+        sum(re.points) as points
+    from results re 
+    join races ra on re.raceid = ra.raceid
+    join drivers d on d.driverid = re.driverid
+    where re.driverid = 830
+    group by 1,2,3,4,5,6
+)X
+
+join season_ranks sr
+  on sr.driverid = X.driverid
+ and sr.season   = X.season
+order by X.season;
+
+
