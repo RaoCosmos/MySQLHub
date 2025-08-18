@@ -14,15 +14,12 @@ Each project demonstrates how I structure queries, design schemas, and apply ana
 5. Season summary and Championship Insights and
 6. Other interesting adhoc problems.
 
-
-🛒 E-Commerce Business Analytics
+Business Analytics
 
 1. Business-focused SQL use cases for online retail.
 2. Sales Trends: Monthly and yearly revenue growth.
 3. Customer Lifetime Value (CLV): Segmenting customers based on total spend.
 4. Top Products: Identifying best sellers and seasonal demand.
-5. Churn Analysis: Detecting customers at risk of not returning.
-
 
 🔗 Data Harmonization & Integration
 
