@@ -1,5 +1,8 @@
--- Queries to answer business problems for a hypothetical FMCG company - Atliq --
--- Assuming the role of a supply chain analyst to dig deep into their data and provide some reports and useful insights --
+---- QUERIES TO ANSWER BUSINESS QUESTIONS FOR A HYPOTHETICAL FMCG COMPANY - ATLIQ ----
+--------------------------------------------------------------------------------------
+
+---- Assuming the role of a supply chain analyst to dig deep into their data and provide some reports and useful insights ----
+------------------------------------------------------------------------------------------------------------------------------
 
 /*Report 1 
 LIST OF MARKETS WHERE ATLIQ EXLUSIVELY OPERATES IN THE APAC REGION */
@@ -9,7 +12,6 @@ FROM
 	dim_customer 
 WHERE region = 'APAC' AND customer = 'Atliq Exclusive'
 ORDER BY 2 ASC; 
-
 
 /*REPORT 2 
 PERCENTAGE OF UNIQUE PRODUCT INCREASE IN 2021 COMPARED TO 2020 */
