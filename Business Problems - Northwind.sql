@@ -1,162 +1,212 @@
--- NorthWind Database Tables
-/*TABLES AND DATA */
+/*
+	Author: SOHAN RAO
+	Dataset: Northwind Sales Data
+	Purpose: Analyze and answer complex business problems using advanced SQL functions
+*/
 
-/* Advanced Business Problems*/
+-- customers who have ordered something 
+-- using a right join 
+SELECT 
+DISTINCT o.customerid
+FROM customers c 
+RIGHT JOIN orders o ON c.customerid=o.customerid;
 
--- customers with high orders in 2016
-WITH total_sum as 
-  ( select 
+-- Using a correlated subquery 
+SELECT c.customerid
+FROM customers c
+WHERE EXISTS (SELECT o.customerid FROM orders o WHERE o.customerid=c.customerid);
+
+-- High Freight charge problems last year
+-- LAST 12 MONTHS DATA- USE INTERVAL FUNCTION
+-- FIRST FIND THE LATEST ORDERDATE (USE MAX)
+-- USE INTERVAL WHICH WILL TAKE BACK THE DATE 12 MONTHS BEHIND
+-- THEN SELECT ORDERDATE THAT IS > THAN THAT INTERVAL DATE 
+SELECT  
+	o.shipcountry,
+	o.orderdate,
+	ceil(avg(o.freight)) avg_freight
+FROM orders o 
+GROUP BY 1,2
+HAVING o.orderdate > (SELECT max(orderdate) FROM orders) - interval '12 months' 
+ORDER BY 3 DESC
+LIMIT 3;
+
+	SELECT 
+		max(orderdate) - interval '12 months'
+	FROM orders;
+
+-- customers with no orders
+-- using subquery single columns multiple row 
+-- customers with no orders for empid 4
+SELECT 
+	c.customerid FROM customers c 
+WHERE c.customerid not in (SELECT o.customerid FROM orders o WHERE o.employeeid=4);
+
+-- using correlated sub query 
+SELECT 
+	c.customerid
+FROM customers c 
+WHERE c.customerid NOT IN (SELECT o.customerid FROM orders o WHERE o.customerid=c.customerid AND o.employeeid=4);
+
+-- first order in each country
+SELECT * 
+	FROM 
+		(SELECT 
+				o.shipcountry,
+				o.customerid,
+				o.orderid, 
+				o.orderdate,
+				rank() over(partition by shipcountry order by orderdate asc) rn
+		 FROM orders o 
+		 ORDER BY 1) X
+		 WHERE x.rn=1;
+
+-- Analyze Customers with high orders in 2016
+-- using a CTE
+WITH total_sum AS 
+  ( 
+	SELECT 
  	c.customerid, 
 	c.companyname,
 	o.orderid,
 	o.orderdate,
-	(od.unitprice*od.quantity ) as total_sum,
+	(od.unitprice*od.quantity ) AS total_sum,
 	od.discount,
     (od.unitprice*od.quantity)-
 	( (od.unitprice*od.quantity )*od.discount) after_discount
-	from orders o
-	join order_details od on od.orderid=o.orderid
-	join customers c on c.customerid=o.customerid
-	order by 1
+	FROM orders o
+	JOIN order_details od ON od.orderid=o.orderid
+	JOIN customers c ON c.customerid=o.customerid
+	ORDER BY 1
   )
+SELECT  
+	total_sum.customerid,
+	total_sum.companyname,
+	total_sum.orderid,
+	total_sum.orderdate,
+	sum(after_discount) AS total_value_after_discount
+FROM total_sum 
+GROUP BY 1,2,3,4
+HAVING sum(after_discount) >= 10000 AND orderdate >= '1997-01-01' AND orderdate <= '1998-01-01'
+ORDER BY 4 DESC;
 
-select 
-total_sum.customerid,
-total_sum.companyname,
-total_sum.orderid,
-total_sum.orderdate,
-sum(after_discount) as total_value_after_discount
-from total_sum 
-group by 1,2,3,4
-having
-sum(after_discount) >= 10000
-and orderdate >= '1997-01-01' and orderdate <= '1998-01-01'
-order by 4 desc;
-
--- High end customers with discount
-WITH total_sum as 
+-- Analyze High end customers with discount
+WITH total_sum AS
 (
-	select 
+	SELECT  
 	c.customerid, 
 	c.companyname,
 	o.orderid,
 	o.orderdate,
-	(od.unitprice*od.quantity ) as total_sum,
+	(od.unitprice*od.quantity ) AS total_sum,
 	od.discount,
 	(od.unitprice*od.quantity)-
-	( (od.unitprice*od.quantity )*od.discount) after_discount
-from orders o
-join order_details od on od.orderid=o.orderid
-join customers c on c.customerid=o.customerid
-order by 1
+	((od.unitprice*od.quantity )*od.discount) after_discount
+FROM orders o
+JOIN order_details od ON od.orderid=o.orderid
+JOIN customers c ON c.customerid=o.customerid
+ORDER BY 1
 )
+SELECT 
+	total_sum.customerid,
+	total_sum.companyname,
+	total_sum.orderid,
+	total_sum.orderdate,
+	sum(after_discount) AS total_value_after_discount
+FROM total_sum 
+GROUP BY 1,2,3,4
+HAVING sum(after_discount) >= 10000 AND orderdate >= '1997-01-01' AND orderdate <= '1998-01-01'
+ORDER BY 4 DESC;
 
-select 
-total_sum.customerid,
-total_sum.companyname,
-total_sum.orderid,
-total_sum.orderdate,
-sum(after_discount) as total_value_after_discount
-from total_sum 
-group by 1,2,3,4
-having
-sum(after_discount) >= 10000
-and orderdate >= '1997-01-01' and orderdate <= '1998-01-01'
-order by 4 desc;
-
--- month end orders
+-- Calculate Month end orders
 -- USE DATE_TRUNC WHICH WILL RESET THE FIELD(DAY,MONTH,YEAR)
 -- THEN ADD DAYS TO IT
-select
-o.orderid,
-o.employeeid,
-o.orderdate
-from orders o
-where
-o.orderdate=
-(date_trunc('month',orderdate) + '1 MONTH - 1 DAY'::interval)::DATE
-order by 3;
+SELECT 
+	o.orderid,
+	o.employeeid,
+	o.orderdate
+FROM orders o
+WHERE o.orderdate = (date_trunc('month',orderdate) + '1 MONTH - 1 DAY'::interval)::DATE
+ORDER BY 3;
 
-select 
-(date_trunc('month', orderdate) + 
-interval '1 month - 1 day')::date
-from orders order by 1 ;
+SELECT (date_trunc('month', orderdate) + interval '1 month - 1 day')::date
+FROM orders 
+ORDER BY 1 ;
 
 -- most line items in orders
-select 
-o.orderid,
-count(od.orderid)
-from orders o 
-join order_details od
-on o.orderid=od.orderid
-group by 1 
-order by 2 desc
-limit 10;
-
---orders- random assortment
-select * from orders;
-select * from order_details;
+SELECT  
+	o.orderid,
+COUNT(od.orderid)
+FROM orders o 
+JOIN order_details od
+ON o.orderid=od.orderid
+GROUP BY 1 
+ORDER BY 2 DESC
+LIMIT 10;
 
 -- orders accidental double entry
-select orderid, quantity
-From Order_Details
-Where Quantity >= 60
-Group By
-OrderID
-,Quantity
-Having Count(*) > 1
+-- Using SubQuery to calcualte
+SELECT 
+	orderid, 
+	quantity
+FROM Order_Details
+WHERE Quantity >= 60
+GROUP BY OrderID,Quantity
+HAVING COUNT(*) > 1
 
-(select
-o.orderid,
-o.quantity,
-rank() over(partition by o.quantity order by o.orderid) rnk
-from order_details o
-order by 2 )x
-where x.rnk>1;
+(SELECT 
+	o.orderid,
+	o.quantity,
+RANK() OVER(PARTITION BY o.quantity ORDER BY o.orderid) rnk
+FROM order_details o
+ORDER BY 2 )x
+WHERE x.rnk>1;
 
 -- late orders 
 --& which employees, 
 -- late orders vs total orders
 
-with late_orders as 
+WITH late_orders as 
 (
-select employeeid, lastname, count(order_status) late_orders
-from 
-	(select 
+	SELECT employeeid, lastname, COUNT(order_status) late_orders
+FROM 
+	(
+	SELECT  
  		o.orderid, 
     	o.employeeid, 
     	e.lastname, 
-    	case when
-			o.shippeddate > o.requireddate then 'late'
-        	else 'on-time '
-        	end as order_status
-		from orders o
-			join employees e
-				on o.employeeid= e.employeeid ) X
-where X.order_status= 'late'
-group by 1, 2
-order by 3 desc
-),
-total_orders as 
+    	CASE WHEN 
+				o.shippeddate > o.requireddate THEN 'late'
+        	 ELSE 
+				'on-time '
+        	END AS
+				order_status
+	FROM orders o
+	JOIN employees e ON o.employeeid= e.employeeid ) X
+	WHERE X.order_status= 'late'
+	GROUP BY 1, 2
+    ORDER BY 3 DESC
+	),
+total_orders AS 
 (
-select 
-o.employeeid, e.lastname, count(o.orderid) total
-from orders o
-join employees e 
-on e.employeeid=o.employeeid
-group by 1, 2
-order by 3 desc
+	SELECT  
+		o.employeeid, e.lastname, COUNT(o.orderid) total
+	FROM orders o
+	JOIN employees e 
+	ON e.employeeid=o.employeeid
+	GROUP BY 1, 2
+	ORDER BY 3 DESC
 )
-select late_orders.employeeid, late_orders.lastname, 
-late_orders.late_orders,
-total_orders.total,
-round(((late_orders::real)/(total::real))::decimal,2)  percentage_lateorders
-from late_orders
-join total_orders on 
-late_orders.lastname=total_orders.lastname;
+SELECT 
+	late_orders.employeeid, 
+	late_orders.lastname, 
+	late_orders.late_orders,
+	total_orders.total,
+	round(((late_orders::real)/(total::real))::decimal,2)  percentage_lateorders
+FROM late_orders
+JOIN total_orders on late_orders.lastname=total_orders.lastname;
 
 -- missing employee
-
 -- customer grouping
 with total_sum as 
 ( select 
@@ -205,11 +255,7 @@ full outer join customer_country
 on supplier_country.country=customer_country.country
 ;
 
-select * from suppliers;
---supplierid
-select * from customers;
---customerid
---country
+
 
 with Total_sup as 
 (
@@ -228,18 +274,6 @@ from total_sup
 full outer join total_cust on
 total_sup.country=total_cust.country
 ;
-
--- first order in each country
-select * from 
-(select 
-o.shipcountry,
-o.customerid,
-o.orderid, 
-o.orderdate,
-rank() over(partition by shipcountry order by orderdate asc) rn
-from orders o 
-order by 1) X
-where x.rn=1;
 
 -- 5 day order period
 -- date difference 
@@ -277,64 +311,6 @@ select *, cte1.next_orderdate- cte1.initial_orderdate::date
 from cte1
 where cte1.next_orderdate- cte1.initial_orderdate::date 
 < 5;
-
-
-
-
-/* table data */
-
-create table categories 
-( categoryid int, categoryname char(20), description text ); 
-
-create table customers 
-( customerid char(20), companyname text, contactname text,
-contacttitle text, address text, city char(20),
-region char(20), postalcode varchar(50), country varchar(50),
-phone varchar(50), fax varchar(50) );
-
-create table employees 
-( employeeid int, lastname text, firstname text, title text,
-titleofcourtesy text, birthdate date, hiredate date,
-address text, city text, region text, postalcode text,
-country text, homephone text, extension int, notes text,
-reports_to int );
-
-create table employeeterritories
-( employeeid int, territoryid int );
-
-create table order_details
-( orderid int, productid int, unitprice real, quantity int, discount real);
-
-create table orders 
-( orderid int, customerid text, employeeid int, orderdate date,
-requireddate date, shippeddate date, shipvia int, freight real,
-shipname text, shipaddress text, shipcity text,
-shipregion text, shippostalcode text, shipcountry text );
-
-create table products 
-( productid int, productname text, supplierid int, categoryid int,
-quantityperunit text, unitprice real,
-unitsinstock real, unitsonorder real, reorderlevel real, discontinued int );
-
-create table region
-( regionid int, regiondescription text );
-
-create table shippers
-( shipperid int, companyname text, phone text );
-
-create table suppliers
-( supplierid int, companyname text, contactname text,
-contacttitle text,address text,city text, region text,
-postalcode text, country text, phone text, fax text,
-homepage text);
-
-create table territories
-( territoryid int,territorydescription text, regionid int);
-
-create table usstates
-( stateid int, statename text, stateabbr text, stateregion text);
-
-------------------/* BUSINESS QUESTIONS */----------------------
 
 -- Categories
 select 
@@ -375,75 +351,23 @@ from customers c
 order by 1 asc;
 
 -- High freight charges problem
-select 
-o.shipcountry,
-ceil(avg(o.freight)) avg_freight
-from orders o 
-group by 1
-order by 2 desc
-limit 3;
+SELECT  
+	o.shipcountry,
+	ceil(avg(o.freight)) avg_freight
+FROM orders o 
+GROUP BY 1
+ORDER BY 2 DESC
+LIMIT 3;
 
 -- High Freight charge problem in the year 2015
-select 
-o.shipcountry,
-o.orderdate,
-ceil(avg(o.freight)) avg_freight
-from orders o 
-group by 1,2
-having o.orderdate >= '1997-01-01'
-order by 2 desc
-limit 3;
-
--- High Freight charge problems last year
--- LAST 12 MONTHS DATA- USE INTERVAL FUNCTION
--- FIRST FIND THE LATEST ORDERDATE (USE MAX)
--- USE INTERVAL WHICH WILL TAKE BACK THE DATE 12 MONTHS BEHIND
--- THEN SELECT ORDERDATE THAT IS > THAN THAT INTERVAL DATE 
-select 
-o.shipcountry,
-o.orderdate,
-ceil(avg(o.freight)) avg_freight
-from orders o 
-group by 1,2
-having o.orderdate > (select max(orderdate)
-from orders) - interval '12 months' 
-order by 3 desc
-limit 3;
-
-select max(orderdate) - interval '12 months'
-from orders;
-
--- customers with no orders
--- using subquery single columns multiple row sq
--- customers with no orders for empid 4
-select c.customerid from customers c 
-where c.customerid  not in 
-(select o.customerid from orders o where 
-o.employeeid=4);
-
--- using correlated sub query 
-select c.customerid
-from customers c 
-where c.customerid not in
-( select o.customerid from orders o
-  where o.customerid=c.customerid and 
-  o.employeeid=4	
-);
-
--- customers who have ordered something 
--- using right join
-select 
-distinct o.customerid
-from customers c 
-right join orders o 
-on c.customerid=o.customerid;
-
--- correlated subquery 
-select c.customerid
-from customers c
-where
-exists (select o.customerid from orders o
-where o.customerid=c.customerid);
-
+SELECT  
+	o.shipcountry,
+	o.orderdate,
+	ceil(avg(o.freight)) avg_freight
+FROM orders o 
+GROUP BY 1,2
+HAVING o.orderdate >= '1997-01-01'
+ORDER BY 2 DESC
+LIMIT 3;
 
 --- end ----
