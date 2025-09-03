@@ -1,6 +1,6 @@
 /* 
 	Author:Sohan Rao
-    Purpose: Data Cleaning, Column Cleaning & Data Harmonization
+    Purpose: Data Cleaning, Standardizing, Column Cleaning & Data Harmonization
 */
 
 SELECT * 
