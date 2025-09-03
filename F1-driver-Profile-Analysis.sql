@@ -1,7 +1,9 @@
--- EXPLORATORY DATA ANALYSIS
+/* 
+ Author: Sohan Rao
+ Purpose: Exploratory Data Analysis of F1 dataset
+*/
 
 -- DRIVER PROFILE 
-
 -- WHICH DRIVER HAS MOST WINS
 SELECT R.DRIVERID, D.FORENAME, D.NATIONALITY,
 COUNT(POSITION) AS WINS
