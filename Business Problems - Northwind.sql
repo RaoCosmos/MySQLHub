@@ -1,5 +1,5 @@
 /*
-	Author: SOHAN RAO
+	Author: Sohan Rao
 	Dataset: Northwind Sales Data
 	Purpose: Analyze and answer complex business problems using advanced SQL functions
 */
