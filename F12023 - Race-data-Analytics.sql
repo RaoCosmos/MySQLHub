@@ -1,61 +1,73 @@
-/* Formula1 {Elite Single-seater Motorsport) Exploratory Data Analysis - 2022/2023 season data */
-/* Part A - Fernando Alonso career analysis, Part B - Driver profile analysis, Part C - Constructor profile analysis, Part D - General Analysis */
+/*
+	Author: Sohan Rao
+	Introduction: Formula1 {Elite Single-seater Motorsport) Exploratory Data Analysis - 2022/2023 season data 
+*/
 
-/*Part A*/
-/* GOAT - FERNANDO ALONSO F1 CAREER analysis */
+/* 
+	Part A - Fernando Alonso career analysis, 
+    Part B - Driver profile analysis, 
+    Part C - Constructor profile analysis, 
+    Part D - General Analysis 
+*/
 
-create or replace view alonso_career as
+/*
+	Part A - GOAT- Fernando Alonso F1 Career Analysis
+*/
+
+CREATE OR REPLACE VIEW alonso_career AS
 (
 
-	select * , lag(points) over(order by season asc) points_from_previous_season, rank() over(order by points desc) ranking, sum(points) over() total_points_scored
-from
-( select 
-	-- ra.raceid, 
-	re.driverid,
-	d.forename first_name,
-	d.surname last_name,
-	d.number,
-	d.code,
-	to_char(d.dob,'DD-MonthYYYY') birthday,
-	ra.year season,
-	sum(re.points) points
-	from results re 
-	join races ra on re.raceid=ra.raceid
-	join drivers d on d.driverid=re.driverid
-	where re.driverid =4
-	group by 1,2,3,4,5,6,7
-	order by 2,4 asc) X
+SELECT * , 
+	lag(points) over(ORDER BY season ASC) points_from_previous_season, 
+	rank() over(ORDER BY points DESC) ranking, 
+	sum(points) over() total_points_scored
+FROM
+	( SELECT  
+		re.driverid,
+		d.forename first_name,
+		d.surname last_name,
+		d.number,
+		d.code,
+		to_char(d.dob,'DD-MonthYYYY') birthday,
+		ra.year season,
+		sum(re.points) points
+	FROM results re 
+	JOIN races ra ON re.raceid=ra.raceid
+	JOIN drivers d ON d.driverid=re.driverid
+	WHERE  re.driverid =4
+	GROUP BY 1,2,3,4,5,6,7
+	ORDER BY 2,4 asc) X
 
-union
+UNION
 
-select * , lag(points) over(order by season asc) points_from_previous_season, rank() over(order by points desc) rnk, sum(points) over() total_points_scored
-from
-( select 
-	-- ra.raceid, 
-	re.driverid,
-	d.forename first_name,
-	d.surname last_name,
-	d.number,
-	d.code,
-	to_char(d.dob,'DD-MonthYYYY') birthday,
-	ra.year season,
-	sum(re.points) points
-	from results re 
-	join races ra on re.raceid=ra.raceid
-	join drivers d on d.driverid=re.driverid
-	where re.driverid = 1
-	group by 1,2,3,4,5,6,7
-	order by 2,4 asc) X
+SELECT * , lag(points) over(order by season asc) points_from_previous_season, 
+		rank() over(order by points desc) rnk, 
+		sum(points) over() total_points_scored
+FROM
+	(SELECT  
+		re.driverid,
+		d.forename first_name,
+		d.surname last_name,
+		d.number,
+		d.code,
+		to_char(d.dob,'DD-MonthYYYY') birthday,
+		ra.year season,
+		sum(re.points) points
+	FROM results re 
+	JOIN races ra ON re.raceid=ra.raceid
+	JOIN drivers d ON d.driverid=re.driverid
+	WHERE re.driverid = 1
+	GROUP BY 1,2,3,4,5,6,7
+	ORDER BY 2,4 asc) X
+    ORDER BY 2,7) ;
 
-order by 2,7) ;
-
-select * from alonso_career;
-select * from drivers;
-
-create or replace view FA_14 
-as 
-(select * , lag(points) over(order by season asc) points_from_previous_season, rank() over(order by points desc) rnk, round(cume_dist() over(order by points)::numeric*100,2) cumt_dist,
-sum(points) over() total_points_scored
+CREATE OR REPLACE VIEW FA_14 
+AS 
+(
+	SELECT * , 
+			lag(points) over(order by season asc) points_from_previous_season, 
+			rank() over(order by points desc) rnk, round(cume_dist() over(order by points)::numeric*100,2) cumt_dist,
+            sum(points) over() total_points_scored
 from
 	(select 
 	re.driverid,
@@ -71,12 +83,9 @@ from
 	where re.driverid =4
 	group by 1,2,3,4,5,6,7 order by 2,4 asc) X );
 
-select * from fa_14;
-
 alter view fa_14 rename column driver_code to code;
 alter view fa_14 rename column points to season_points;
 
-drop view fa_14;
 
 SELECT  ra.year, re.raceid,
 re.driverid, re.ranks
@@ -156,17 +165,23 @@ where driverid=4
 order by 1 asc;
 
 
-/* Part B - Driver Analysis */
+/* 
+	Part B - Driver Analysis 
+*/
 
 -- Driver wins
-Select R.DRIVERID, D.FORENAME, d.surname, D.NATIONALITY, COUNT(POSITION) AS WINS
+SELECT  
+		R.DRIVERID, 
+		D.FORENAME, 
+		d.surname, 
+		D.NATIONALITY, 
+		COUNT(POSITION) AS WINS
 From
 	RESULTS R 
 Join 
 	DRIVERS D ON D.DRIVERID=R.DRIVERID
 Where 
 	POSITION = 1 
-
 GROUP BY 1,2,3,4 ORDER BY 5 DESC;
 
 -- Nationality Wins
@@ -220,7 +235,9 @@ D.DRIVERID=R.DRIVERID
 GROUP BY 1,2,3 ORDER BY 4 DESC ;
 
 
-/* Part C - Constructor Analysis */
+/* 
+	Part C - Constructor Analysis 
+*/
 
 -- Constructor with most wins
 SELECT CS.CONSTRUCTORID, C.NAME, COUNT(CS.POSITION) FROM
@@ -235,7 +252,9 @@ ON C.CONSTRUCTORID=CS.CONSTRUCTORID
 -- WHERE CS.POSITION = 1
 GROUP BY 1,2 ORDER BY 3 DESC;
 
-/* Part D - General Analysis */ 
+/* 
+	Part D - General Analysis 
+*/ 
 
 -- how points were awarded for 1st place over the years 
 select 
@@ -250,7 +269,6 @@ order by Year;
 -- number of races on the calendar over the years 
 select year, count(round) from races 
 group by year order by 1 asc ;
-
 
 /* Pitstop analysis */
 
@@ -283,7 +301,4 @@ select r.year,
 avg(l.laptime)
 from laptimes l join races r on l.raceid=r.raceid
 group by 1 order by 1 desc;
-
-
- 
 
