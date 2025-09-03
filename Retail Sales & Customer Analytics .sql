@@ -1,11 +1,12 @@
----- QUERIES TO ANSWER BUSINESS QUESTIONS FOR A HYPOTHETICAL FMCG COMPANY - ATLIQ ----
---------------------------------------------------------------------------------------
+/* 
+	Author:Sohan Rao
+    Purpose: Quries to answer business questions for a hypthetical FMCG company - ATLIQ 
+    Assuming the role of a supply chain analyst to dig deep into their data and provide some reports and useful insights 
+*/
 
----- Assuming the role of a supply chain analyst to dig deep into their data and provide some reports and useful insights ----
-------------------------------------------------------------------------------------------------------------------------------
-
-/*Report 1 
-LIST OF MARKETS WHERE ATLIQ EXLUSIVELY OPERATES IN THE APAC REGION */
+/*
+    APAC region market
+*/
 SELECT  
 	concat(region,' ', 'Asia-Pacific') Region, customer Customer, UPPER(market) Current_Operating_Markets
 FROM 
@@ -13,8 +14,10 @@ FROM
 WHERE region = 'APAC' AND customer = 'Atliq Exclusive'
 ORDER BY 2 ASC; 
 
-/*REPORT 2 
-PERCENTAGE OF UNIQUE PRODUCT INCREASE IN 2021 COMPARED TO 2020 */
+/*
+  % of unique product increase in 2021 compared to previous year 2020 
+*/
+
 use gdb023;
 -- A. PERCENTAGE OF UNIQUE PRODUCT INCREASE 
 WITH UNQ_2020 AS
@@ -28,7 +31,7 @@ SELECT UNQ_2020.FISCAL_YEAR Fiscal_Year, UNIQUE_PRODUCTS_2020 Unique_Prods_2020,
 	concat(round((((UNQ_2021.UNIQUE_PRODUCTS_2021 - UNQ_2020.UNIQUE_PRODUCTS_2020 ) / UNQ_2020.UNIQUE_PRODUCTS_2020) * 100), 2), '', '%') Percentage_Chng
 FROM UNQ_2020 CROSS JOIN UNQ_2021;
 
-/* B. UNIQUE PRODUCT SOLD QUANTITY % INCREASE */
+/* B. Unique product sold quantity % increase */
 WITH 
 T1 AS 
 (select distinct(s.product_code), p.product, sum(s.sold_quantity) sum1, s.fiscal_year from fact_sales_monthly s
@@ -48,16 +51,18 @@ FROM T1
 	RIGHT JOIN T2 ON T1.product_code=T2.product_code 
 ORDER BY 7 DESC;
 
-/*REPORT 3 
-PROVIDE SEGMENT WISE UNIQUE PRODUCT OFFERING */ 
+/* 
+Segment wise unique product offering 
+*/
 
 SELECT  
 UPPER(segment) Segment , CONCAT(COUNT(DISTINCT product_code), ' ' , 'Unique Products') Products 
 FROM dim_product 
 GROUP BY segment ORDER BY 2 ASC;
 
-/* REPORT 4 
-WHICH SEGMENT HAD THE MOST INCREASE IN UNIQUE PRODUCT OFFERING IN 2021 COMPARED TO 2020? */
+/*  
+year on year comparision of most increase in product offering 
+*/
  
 WITH PRODUCTS_2020 AS
 (select 
@@ -76,22 +81,22 @@ SELECT  PRODUCTS_2020.SEGMENT Segment,
 FROM PRODUCTS_2020 JOIN PRODUCTS_2021 
 ON PRODUCTS_2020.SEGMENT = PRODUCTS_2021.SEGMENT ORDER BY Product_Increase DESC;
 
-/* REPORT 5 
-PRODUCT WITH HIGHEST AND LOWEST MANUFACTURING COSTS */
-select m.product_code, 
-	   p.product,
-       m.manufacturing_cost
-from dim_product p join fact_manufacturing_cost m on m.product_code=p.product_code where manufacturing_cost=
-(select max(manufacturing_cost) from fact_manufacturing_cost)
-union
-select m.product_code, 
-	   p.product,
-       m.manufacturing_cost
-from dim_product p join fact_manufacturing_cost m on m.product_code=p.product_code where manufacturing_cost=
-(select min(manufacturing_cost) from fact_manufacturing_cost);
+/* identifying highest and lowest manufacturing costs */
 
-/* REPORT 6 
-TOP 5 CUSTOMERS WITH HIGHEST AVERAGE DISCOUNTS FOR 2021 IN THE INDIAN MARKET */
+SELECT m.product_code, 
+	   p.product,
+       m.manufacturing_cost
+FROM dim_product p JOIN fact_manufacturing_cost m ON m.product_code=p.product_code 
+	WHERE manufacturing_cost=
+		(SELECT max(manufacturing_cost) FROM fact_manufacturing_cost)
+UNION
+SELECT  m.product_code, 
+	   p.product,
+       m.manufacturing_cost
+FROM dim_product p JOIN fact_manufacturing_cost m ON m.product_code=p.product_code WHERE manufacturing_cost=
+(SELECT min(manufacturing_cost) FROM fact_manufacturing_cost);
+
+/* Top 5 customers with highest average discounts for 2011 in the indian market */
  SELECT 
 	D.FISCAL_YEAR Fiscal_Year, 
 	D.CUSTOMER_CODE Cust_Code, 
@@ -103,8 +108,9 @@ TOP 5 CUSTOMERS WITH HIGHEST AVERAGE DISCOUNTS FOR 2021 IN THE INDIAN MARKET */
  HAVING FISCAL_YEAR =2021 AND C.MARKET = 'India' ORDER BY 5 DESC limit 5 ;
  
  
-/* REPORT 7 
-MONTHLY GROSS SALES AMOUNT FOR ATLIQ EXCLUSIVE */
+/* 
+Monthly gross sales amount 
+*/
 
  SELECT  
  c.customer Customer, month(s.date) Month, year(s.date) Year,
@@ -116,8 +122,9 @@ MONTHLY GROSS SALES AMOUNT FOR ATLIQ EXCLUSIVE */
  group by 1,2,3 having c.customer = 'Atliq Exclusive'
  order by 3 asc ;
  
- /* REPORT 8 
-WHICH QUARTER OF 2020 GOT THE MAXIMUM TOTAL SOLD QUANTITIES?*/
+ /* 
+	Identifying the Quarter of 2020 got the maximum total sold quantities 
+*/
 WITH CTE1 AS 
 (SELECT 
 	s.fiscal_year, 
@@ -152,9 +159,9 @@ WHEN MONTH(DATE) BETWEEN 6  AND 8  THEN 'Q4'
  order by total_sold desc;
  
  
- /* REPORT 9 
-CHANNELS THAT BROUGHT MOST GROSS SALES IN 2021 AND PERCENTAGE CONTRIBUTION */
-
+ /* 
+Channels that brought most gross slaes in 2021 and % contribution
+*/
 WITH CGS AS 
 ( select s.fiscal_year, 
          c.channel, 
@@ -174,8 +181,9 @@ CGS.GROSS_SALES Gross_Sales,
 CONCAT(round(((CGS.gross_sales/TGS.total_gross_sales)*100),2),' ', '%')  Percentage
 from CGS join TGS on CGS.fiscal_year=TGS.fiscal_year;
 
-/* REPORT 10  
-TOP 3 PRODUCTS IN EACH DIVISION WITH HIGH TOTAL SOLD QUANTITY FOR 2021? */
+/* 
+	Top 3 products in each division with high total sold quantity for 2021
+*/
 with sales as 
 ( select division, 
 	     m.product_code, 
