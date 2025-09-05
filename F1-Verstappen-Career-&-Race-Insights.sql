@@ -1,7 +1,9 @@
-------------------------- FORMULA 1 2024 SEASON --------------------------------
-EXPLORING 2024 SEASON AND MAX VERSTAPPENS CAREER IN 2024 AND SO FAR IN FORMULA 1
---------------------------------------------------------------------------------
-
+/* ===========================================================================
+ FORMULA1 2024 SEASON 
+ Author: Sohan Rao
+ Dataset: F12024 from Kaggle
+ Purpose: Exploring the 2024 season and Max Verstappens Career in 2024 
+============================================================================*/
 
 ---- 2024 RACE RESULTS ---
 --------------------------
@@ -88,7 +90,6 @@ FROM
     where re.driverid = 830
     group by 1,2,3,4,5,6
 )X
-
 JOIN season_ranks sr
 ON sr.driverid = X.driverid
 AND sr.season  = X.season
