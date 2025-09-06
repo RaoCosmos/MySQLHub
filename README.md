@@ -1,7 +1,7 @@
 # SQLHub
 
 Hi,
-This repository is a collection of my work where I explore datasets using SQL and related data tool.
+This repository is a collection of my work where I explore various datasets using SQL and related data tool.
 Each projects purpose is to demonstrates how I structure queries, apply computation, design schemas, and apply analytics techniques to uncover useful insights.
 
 --- Areas and Domains ---
