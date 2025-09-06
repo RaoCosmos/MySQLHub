@@ -3,7 +3,7 @@
    Author: Sohan Rao
    KPIs:
    1.Demand Supply Balance
-   2.Revenue Leakage 
+   2.Revenue Leakage - Top contributors
    3.Revenue Summary - payment methods, vehicle type, 
    4.Ride Performance by Time of day 
    5.Customer Retention 
@@ -56,26 +56,27 @@ order by 2 desc;
 
 /* 
 	2. Revenue leakage  
-	caused by vehicle breakdowns by vehicle type.
-	Identify vehicle types with the highest breakdown counts leading to 
-	incomplete bookings over the year.
+	Top 3 contributors to revenuw loss every month
 
 	Key Observations:
-	1. Auto consistently has the highest number of breakdowns in most months except 
-	   for June, September, and November.
-	2. UberXL consistently has the lowest number of vehicle breakdowns all year
+	1. Auto consistently has the highest breakdowns in most months except for June, September, and November.
+	2. UberXL consistently has the lowest breakdowns all year long
 */
 
-select 
-	  vehicle_type ride_type, 
-	  date_part('month',date) as month_number,
-	  initcap(to_char(date, 'month')) as month,
-	  count(incomplete_rides) as breakdown_count,
-	  sum(booking_value) as revenue_lost
+select month_number, month, ride_type, breakdown_count,revenue_lost 
+from 
+	(select 
+	  	date_part('month',date) as month_number,
+	  	initcap(to_char(date, 'month')) as month,
+      	vehicle_type ride_type,
+	  	count(incomplete_rides) as breakdown_count,
+	  	sum(booking_value) as revenue_lost,
+	    rank() over (partition by date_part('month',date) order by count(incomplete_rides) asc) as rev_leak_rank 
 from  uber_rides
 where incomplete_rides_reason = 'Vehicle Breakdown'
 group by 1,2,3
-order by 2,4 DESC;
+order by 1,2,4 desc) X 
+where x.rev_leak_rank>4;
 ---------------------------------------------------------------------------------------
 
 ---------------------------------------------------------------------------------------
